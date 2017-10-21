@@ -6,7 +6,7 @@ import sklearn
 from sklearn.utils import shuffle
 import matplotlib.image as mpimg
 
-data_path = 'data/created/'
+data_path = 'data/0_training_data/'
 
 samples = []
 with open(data_path+'driving_log.csv') as csvfile:
@@ -17,6 +17,8 @@ with open(data_path+'driving_log.csv') as csvfile:
 from sklearn.model_selection import train_test_split
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 
+correction_factor = 0.3
+
 def generator(samples, batch_size=32):
     num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
@@ -26,20 +28,24 @@ def generator(samples, batch_size=32):
             images = []
             angles = []
             for batch_sample in batch_samples:
-                name = batch_sample[0].strip()
-                if(os.path.isfile(name) ):
-                #if(os.path.isfile(data_path+name) ):
-                    center_image = mpimg.imread(name)
-                    #center_image = mpimg.imread(data_path+name)
-                    center_angle = float(batch_sample[3])
-                    images.append(center_image)
-                    angles.append(center_angle)
+                for i in range(3):
+                    name = batch_sample[i].strip()
+                    if(os.path.isfile(name) ):
+                        image = mpimg.imread(name)
+                        angle = float(batch_sample[3])
+                        if (i == 1):
+                            angle += correction_factor
+                        if (i == 2):
+                            angle -= correction_factor
 
-                    # data augmentation by flipping
-                    center_image_flipped = np.fliplr(center_image)
-                    center_angle_flipped = -center_angle
-                    images.append(center_image_flipped)
-                    angles.append(center_angle_flipped)
+                        images.append(image)
+                        angles.append(angle)
+
+                        # data augmentation by flipping
+                        image_flipped = np.fliplr(image)
+                        angle_flipped = -angle
+                        images.append(image_flipped)
+                        angles.append(angle_flipped)
 
             X_train = np.array(images)
             y_train = np.array(angles)
@@ -56,10 +62,15 @@ import matplotlib.pyplot as plt
 model = Sequential()
 model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(160,320,3)))
 model.add(Cropping2D(cropping=((70,25),(0,0))))
+model.add(Dropout(0.5))
 model.add(Conv2D(24,5,5,activation='relu', subsample=(2,2)))
+model.add(Dropout(0.5))
 model.add(Conv2D(36,5,5,activation='relu', subsample=(2,2)))
+model.add(Dropout(0.5))
 model.add(Conv2D(48,5,5,activation='relu', subsample=(2,2)))
+model.add(Dropout(0.5))
 model.add(Conv2D(64,3,3,activation='relu'))
+model.add(Dropout(0.5))
 model.add(Conv2D(64,3,3,activation='relu'))
 model.add(Flatten())
 model.add(Dense(100,activation='relu'))
@@ -71,7 +82,7 @@ model.add(Dropout(p=0.5))
 model.add(Dense(1))
 
 model.compile(loss='mse', optimizer='adam')
-history_object = model.fit_generator(train_generator, samples_per_epoch= len(train_samples*2), validation_data=validation_generator, nb_val_samples=len(validation_samples), nb_epoch=3)
+history_object = model.fit_generator(train_generator, samples_per_epoch= len(train_samples*6), validation_data=validation_generator, nb_val_samples=len(validation_samples), nb_epoch=2)
 
 ### print the keys contained in the history object
 print(history_object.history.keys())
