@@ -8,17 +8,27 @@ import matplotlib.image as mpimg
 
 data_path = 'data/0_training_data/'
 
+# read csv file and store lines in "samples"
+# "samples" include image paths (center,left,right) and steering angle
 samples = []
 with open(data_path+'driving_log.csv') as csvfile:
     reader = csv.reader(csvfile)
     for line in reader:
         samples.append(line)
 
+# splitting data set in training and validation 80% and 20% respectively
 from sklearn.model_selection import train_test_split
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 
+# Center, left and right images are recorded. Left and right images get and
+# correction factor of the steering angle
+# Trade-off here: Higher correction factor -> higher oscillations (bad)
+# Lower correction factor -> harder learning to stay on track (also bad)
 correction_factor = 0.05
 
+# Generator pattern (yield) in order to not save all data in memory at one time
+# Only batch portion which is currently needed by the corresponding 
+# model.fit_generator is held in memory
 def generator(samples, batch_size=32):
     num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
@@ -28,6 +38,7 @@ def generator(samples, batch_size=32):
             images = []
             angles = []
             for batch_sample in batch_samples:
+                # center 0, left 1, righ 2 images handling
                 for i in range(3):
                     name = batch_sample[i].strip()
                     if(os.path.isfile(name) ):
@@ -51,8 +62,8 @@ def generator(samples, batch_size=32):
             y_train = np.array(angles)
             yield sklearn.utils.shuffle(X_train, y_train)
 
-train_generator = generator(train_samples, batch_size=32)
-validation_generator = generator(validation_samples, batch_size=32)
+train_generator = generator(train_samples, batch_size=128)
+validation_generator = generator(validation_samples, batch_size=128)
 
 from keras.models import Sequential, Model
 from keras.layers import Flatten, Dense, Lambda, Dropout
@@ -63,13 +74,13 @@ model = Sequential()
 model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(160,320,3)))
 model.add(Cropping2D(cropping=((70,25),(0,0))))
 
+model.add(Conv2D(12,5,5,activation='relu', subsample=(2,2)))
+
+model.add(Conv2D(18,5,5,activation='relu', subsample=(2,2)))
+
 model.add(Conv2D(24,5,5,activation='relu', subsample=(2,2)))
 
-model.add(Conv2D(36,5,5,activation='relu', subsample=(2,2)))
-
-model.add(Conv2D(48,5,5,activation='relu', subsample=(2,2)))
-
-model.add(Conv2D(64,3,3,activation='relu'))
+#model.add(Conv2D(64,3,3,activation='relu'))
 
 model.add(Conv2D(64,3,3,activation='relu'))
 model.add(Flatten())
