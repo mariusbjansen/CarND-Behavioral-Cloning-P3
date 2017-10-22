@@ -17,7 +17,7 @@ with open(data_path+'driving_log.csv') as csvfile:
 from sklearn.model_selection import train_test_split
 train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 
-correction_factor = 0.3
+correction_factor = 0.05
 
 def generator(samples, batch_size=32):
     num_samples = len(samples)
@@ -62,15 +62,15 @@ import matplotlib.pyplot as plt
 model = Sequential()
 model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(160,320,3)))
 model.add(Cropping2D(cropping=((70,25),(0,0))))
-model.add(Dropout(0.5))
+
 model.add(Conv2D(24,5,5,activation='relu', subsample=(2,2)))
-model.add(Dropout(0.5))
+
 model.add(Conv2D(36,5,5,activation='relu', subsample=(2,2)))
-model.add(Dropout(0.5))
+
 model.add(Conv2D(48,5,5,activation='relu', subsample=(2,2)))
-model.add(Dropout(0.5))
+
 model.add(Conv2D(64,3,3,activation='relu'))
-model.add(Dropout(0.5))
+
 model.add(Conv2D(64,3,3,activation='relu'))
 model.add(Flatten())
 model.add(Dense(100,activation='relu'))
