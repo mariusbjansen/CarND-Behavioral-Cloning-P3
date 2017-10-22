@@ -24,11 +24,16 @@ train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 # correction factor of the steering angle
 # Trade-off here: Higher correction factor -> higher oscillations (bad)
 # Lower correction factor -> harder learning to stay on track (also bad)
-correction_factor = 0.2
+correction_factor = 0.15
 
 # Generator pattern (yield) in order to not save all data in memory at one time
 # Only batch portion which is currently needed by the corresponding 
 # model.fit_generator is held in memory
+
+# data augmentation
+augmented_fac_flipping = 2
+augmented_fac_center_left_right = 3
+
 def generator(samples, batch_size=32):
     num_samples = len(samples)
     while 1: # Loop forever so the generator never terminates
@@ -39,7 +44,7 @@ def generator(samples, batch_size=32):
             angles = []
             for batch_sample in batch_samples:
                 # center 0, left 1, righ 2 images handling
-                for i in range(3):
+                for i in range(augmented_fac_center_left_right):
                     name = batch_sample[i].strip()
                     if(os.path.isfile(name) ):
                         image = mpimg.imread(name)
@@ -74,26 +79,23 @@ model = Sequential()
 model.add(Lambda(lambda x: (x / 255.0) - 0.5, input_shape=(160,320,3)))
 model.add(Cropping2D(cropping=((70,25),(0,0))))
 
-model.add(Conv2D(12,5,5,activation='relu', subsample=(2,2)))
-
-model.add(Conv2D(18,5,5,activation='relu', subsample=(2,2)))
-
-model.add(Conv2D(24,5,5,activation='relu', subsample=(2,2)))
-
-#model.add(Conv2D(64,3,3,activation='relu'))
-
-model.add(Conv2D(64,3,3,activation='relu'))
+model.add(Conv2D(6,3,3,activation='relu', subsample=(2,2)))
+model.add(Conv2D(9,3,3,activation='relu', subsample=(2,2)))
+model.add(Conv2D(12,3,3,activation='relu', subsample=(2,2)))
 model.add(Flatten())
-model.add(Dense(100,activation='relu'))
-model.add(Dropout(p=0.5))
 model.add(Dense(50,activation='relu'))
+model.add(Dropout(p=0.5))
+model.add(Dense(20,activation='relu'))
 model.add(Dropout(p=0.5))
 model.add(Dense(10,activation='relu'))
 model.add(Dropout(p=0.5))
 model.add(Dense(1))
 
 model.compile(loss='mse', optimizer='adam')
-history_object = model.fit_generator(train_generator, samples_per_epoch= len(train_samples*6), validation_data=validation_generator, nb_val_samples=len(validation_samples), nb_epoch=2)
+
+augmented_fac_total = augmented_fac_flipping * augmented_fac_center_left_right
+
+history_object = model.fit_generator(train_generator, samples_per_epoch= len(train_samples*augmented_fac_total), validation_data=validation_generator, nb_val_samples=len(validation_samples), nb_epoch=4)
 
 ### print the keys contained in the history object
 print(history_object.history.keys())
