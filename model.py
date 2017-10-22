@@ -24,7 +24,7 @@ train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 # correction factor of the steering angle
 # Trade-off here: Higher correction factor -> higher oscillations (bad)
 # Lower correction factor -> harder learning to stay on track (also bad)
-correction_factor = 0.05
+correction_factor = 0.2
 
 # Generator pattern (yield) in order to not save all data in memory at one time
 # Only batch portion which is currently needed by the corresponding 
@@ -43,7 +43,7 @@ def generator(samples, batch_size=32):
                     name = batch_sample[i].strip()
                     if(os.path.isfile(name) ):
                         image = mpimg.imread(name)
-                        angle = float(batch_sample[3])
+                        angle = float(batch_sample[3]+'.'+batch_sample[4])
                         if (i == 1):
                             angle += correction_factor
                         if (i == 2):
