@@ -24,7 +24,7 @@ train_samples, validation_samples = train_test_split(samples, test_size=0.2)
 # correction factor of the steering angle
 # Trade-off here: Higher correction factor -> higher oscillations (bad)
 # Lower correction factor -> harder learning to stay on track (also bad)
-correction_factor = 0.15
+correction_factor = 0.18
 
 # Generator pattern (yield) in order to not save all data in memory at one time
 # Only batch portion which is currently needed by the corresponding 
@@ -96,7 +96,6 @@ model.compile(loss='mse', optimizer='adam')
 augmented_fac_total = augmented_fac_flipping * augmented_fac_center_left_right
 
 history_object = model.fit_generator(train_generator, samples_per_epoch= len(train_samples*augmented_fac_total), validation_data=validation_generator, nb_val_samples=len(validation_samples), nb_epoch=4)
-
 ### print the keys contained in the history object
 print(history_object.history.keys())
 
